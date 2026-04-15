@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
 import { v4 as uuidv4 } from "uuid";
+import { getRedis } from "@/lib/redis";
 import { numericToGrade, type GradeLetter } from "@/lib/grades";
 import type { Portfolio } from "@/lib/types";
 
@@ -14,7 +14,6 @@ export async function POST(request: Request) {
     }
 
     // SECURITY: Verify submitted grades match the proof's publicInputs
-    // publicInputs contains the grade values that are cryptographically bound to the proof
     const provenGrades: GradeLetter[] = publicInputs.map((v: string | number) => numericToGrade(Number(v)));
     const submittedGrades = grades as GradeLetter[];
 
@@ -41,12 +40,12 @@ export async function POST(request: Request) {
       status: "pending_verification",
     };
 
-    await kv.set(`portfolio:${id}`, JSON.stringify(portfolio));
+    const redis = getRedis();
+    await redis.set(`portfolio:${id}`, JSON.stringify(portfolio));
 
     // Add to portfolio index
-    const index: string[] = (await kv.get("portfolio:index")) ?? [];
-    index.unshift(id);
-    await kv.set("portfolio:index", JSON.stringify(index));
+    await redis.lpush("portfolio:index", id);
+    await redis.ltrim("portfolio:index", 0, 99);
 
     return NextResponse.json({ id, status: portfolio.status });
   } catch (err) {
@@ -59,14 +58,13 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const index: string[] = (await kv.get("portfolio:index")) ?? [];
+    const redis = getRedis();
+    const ids = await redis.lrange("portfolio:index", 0, 19);
     const portfolios: Portfolio[] = [];
 
-    for (const id of index.slice(0, 20)) {
-      const raw = await kv.get(`portfolio:${id}`);
-      if (raw) {
-        portfolios.push(typeof raw === "string" ? JSON.parse(raw) : raw as Portfolio);
-      }
+    for (const id of ids) {
+      const raw = await redis.get(`portfolio:${id}`);
+      if (raw) portfolios.push(JSON.parse(raw));
     }
 
     return NextResponse.json(portfolios);
