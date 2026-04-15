@@ -38,6 +38,25 @@ html {
   background: #9ca3af;
 }
 
+/* -- Hero stagger animation ---------------------------------------------- */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+
 /* -- Transition defaults for interactive elements ------------------------ */
 a,
 button,
