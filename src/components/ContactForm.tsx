@@ -1,0 +1,100 @@
+"use client";
+
+import { useState } from "react";
+
+export function ContactForm() {
+  const [submitted, setSubmitted] = useState(false);
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        setSubmitted(true);
+      }}
+      className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+    >
+      {submitted ? (
+        <div className="sm:col-span-2 text-center py-12">
+          <p className="text-xl font-semibold text-gray-900">We will be in touch shortly.</p>
+          <p className="text-sm text-gray-500 mt-2">Expect a reply within one business day.</p>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="company" className="text-sm font-medium text-gray-700">
+              Company Name
+            </label>
+            <input
+              id="company"
+              name="company"
+              type="text"
+              required
+              className="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition"
+              placeholder="Acme Capital"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="email" className="text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              className="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition"
+              placeholder="you@company.com"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="portfolio" className="text-sm font-medium text-gray-700">
+              Portfolio Size
+            </label>
+            <select
+              id="portfolio"
+              name="portfolio"
+              required
+              className="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition bg-white"
+            >
+              <option value="">Select range</option>
+              <option value="under-1000">Under 1,000 cases</option>
+              <option value="1000-10000">1,000 - 10,000 cases</option>
+              <option value="10000-50000">10,000 - 50,000 cases</option>
+              <option value="50000+">50,000+ cases</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="pain" className="text-sm font-medium text-gray-700">
+              Pain Point
+            </label>
+            <select
+              id="pain"
+              name="pain"
+              required
+              className="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition bg-white"
+            >
+              <option value="">Select area</option>
+              <option value="classification">Document classification is manual</option>
+              <option value="outreach">Debtor outreach is too slow</option>
+              <option value="crm">CRM updates are lagging</option>
+              <option value="visibility">No visibility across legal pipeline</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div className="sm:col-span-2 pt-2">
+            <button
+              type="submit"
+              className="w-full sm:w-auto bg-indigo-600 text-white text-sm font-medium px-8 py-3 rounded-lg hover:bg-indigo-700 active:bg-indigo-800 transition-colors cursor-pointer"
+            >
+              Get Started
+            </button>
+          </div>
+        </>
+      )}
+    </form>
+  );
+}
