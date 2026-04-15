@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useCallback, useRef, type DragEvent, type ChangeEvent } from "react";
+import { useState, useCallback, useRef, useEffect, type DragEvent, type ChangeEvent } from "react";
 import { parseCSV, type ParseResult } from "@/lib/csv-parser";
 import { generateProofInBrowser, type BrowserProofResult, type ProvingPhase } from "@/lib/prover";
 import { gradeDistribution, filterSentinels, type GradeLetter } from "@/lib/grades";
 import { GradeChart } from "@/components/GradeChart";
 import { ProofStatus } from "@/components/ProofStatus";
 import { PinGate } from "@/components/PinGate";
+import { getClientPortfolios, saveClientPortfolio, markSentToVexor, type ClientPortfolio } from "@/lib/client-store";
 
 type PageState = "idle" | "preview" | "proving" | "results" | "error";
+type Tab = "upload" | "history";
 
 export default function ClientUploadsPage() {
   const [state, setState] = useState<PageState>("idle");
@@ -20,7 +22,15 @@ export default function ClientUploadsPage() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendStatus, setSendStatus] = useState<"idle" | "sent" | "error">("idle");
+  const [tab, setTab] = useState<Tab>("upload");
+  const [history, setHistory] = useState<ClientPortfolio[]>([]);
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
+  const [currentPortfolioId, setCurrentPortfolioId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setHistory(getClientPortfolios());
+  }, []);
 
   const reset = useCallback(() => {
     setState("idle");
@@ -80,6 +90,24 @@ export default function ClientUploadsPage() {
       const result = await generateProofInBrowser(preview.result.scores, setPhase);
       setProofResult(result);
       setFilteredGrades(filterSentinels(result.grades, result.publicInputs));
+
+      // Persist to client-side history
+      const portfolioId = crypto.randomUUID();
+      const clientPortfolio: ClientPortfolio = {
+        id: portfolioId,
+        filename: preview.file.name,
+        rowCount: preview.result.rowCount,
+        grades: result.grades,
+        proof: result.proof,
+        publicInputs: result.publicInputs,
+        provingTimeMs: result.provingTimeMs,
+        createdAt: new Date().toISOString(),
+        sentToVexor: false,
+      };
+      saveClientPortfolio(clientPortfolio);
+      setCurrentPortfolioId(portfolioId);
+      setHistory(getClientPortfolios());
+
       setState("results");
     } catch (err) {
       setPhase("error");
@@ -104,6 +132,11 @@ export default function ClientUploadsPage() {
         }),
       });
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const data = await res.json();
+      if (currentPortfolioId) {
+        markSentToVexor(currentPortfolioId, data.id);
+        setHistory(getClientPortfolios());
+      }
       setSendStatus("sent");
     } catch {
       setSendStatus("error");
@@ -148,7 +181,106 @@ export default function ClientUploadsPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
+      {/* Tabs */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-6 flex gap-6">
+          <button
+            onClick={() => setTab("upload")}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+              tab === "upload" ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            New Upload
+          </button>
+          <button
+            onClick={() => setTab("history")}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+              tab === "history" ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            My Portfolios {history.length > 0 && <span className="ml-1.5 bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full">{history.length}</span>}
+          </button>
+        </div>
+      </div>
+
+      {/* History tab */}
+      {tab === "history" && (
+        <div className="max-w-4xl mx-auto px-6 py-10">
+          {history.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-16 text-center">
+              <p className="text-gray-500">No portfolios yet. Upload a CSV to generate your first proof.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-1 space-y-3">
+                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Portfolio History</h2>
+                {history.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setSelectedHistoryId(selectedHistoryId === p.id ? null : p.id)}
+                    className={`w-full text-left bg-white rounded-xl border p-4 transition-all ${
+                      selectedHistoryId === p.id
+                        ? "border-indigo-300 ring-2 ring-indigo-100 shadow-sm"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <p className="text-sm font-semibold text-gray-900 truncate">{p.filename}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(p.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                    <div className="mt-2 flex items-center gap-3 text-xs">
+                      <span className="text-gray-500">{p.rowCount} borrowers</span>
+                      <span className="text-gray-500">{(p.provingTimeMs / 1000).toFixed(1)}s</span>
+                      {p.sentToVexor ? (
+                        <span className="text-emerald-600 font-medium">Sent</span>
+                      ) : (
+                        <span className="text-amber-600 font-medium">Local only</span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div className="lg:col-span-2">
+                {selectedHistoryId ? (
+                  (() => {
+                    const sel = history.find((p) => p.id === selectedHistoryId);
+                    if (!sel) return null;
+                    const filtered = filterSentinels(sel.grades, sel.publicInputs);
+                    return (
+                      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h2 className="text-lg font-bold text-gray-900">{sel.filename}</h2>
+                            <p className="text-sm text-gray-500 mt-1">
+                              {filtered.length} borrowers graded in {(sel.provingTimeMs / 1000).toFixed(1)}s
+                            </p>
+                          </div>
+                          {sel.sentToVexor ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Sent to Vexor
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
+                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Local only
+                            </span>
+                          )}
+                        </div>
+                        <GradeChart grades={filtered} showPricing={false} />
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-200 p-16 text-center">
+                    <p className="text-sm text-gray-500">Select a portfolio to view grade distribution.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === "upload" && <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
         {/* Privacy banner */}
         <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-100 rounded-xl px-5 py-4">
           <svg className="w-5 h-5 text-indigo-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -282,7 +414,7 @@ export default function ClientUploadsPage() {
             )}
           </div>
         )}
-      </div>
+      </div>}
     </div>
     </PinGate>
   );
