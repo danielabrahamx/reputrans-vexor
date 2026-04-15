@@ -56,20 +56,15 @@ export default function AdminPage() {
         body: JSON.stringify({
           proof: portfolio.proof,
           publicInputs: portfolio.publicInputs,
+          portfolioId: portfolio.id,
         }),
       });
       const data = await res.json();
-      if (res.ok && data.verified) {
-        setVerifyStates((prev) => ({ ...prev, [portfolio.id]: "verified" }));
-        setPortfolios((prev) =>
-          prev.map((p) => (p.id === portfolio.id ? { ...p, status: "verified" } : p))
-        );
-      } else {
-        setVerifyStates((prev) => ({ ...prev, [portfolio.id]: "failed" }));
-        setPortfolios((prev) =>
-          prev.map((p) => (p.id === portfolio.id ? { ...p, status: "failed" } : p))
-        );
-      }
+      const newStatus = res.ok && data.verified ? "verified" : "failed";
+      setVerifyStates((prev) => ({ ...prev, [portfolio.id]: newStatus }));
+      setPortfolios((prev) =>
+        prev.map((p) => (p.id === portfolio.id ? { ...p, status: newStatus } : p))
+      );
     } catch {
       setVerifyStates((prev) => ({ ...prev, [portfolio.id]: "failed" }));
       setPortfolios((prev) =>
@@ -159,7 +154,7 @@ export default function AdminPage() {
   };
 
   return (
-    <PinGate portal="admin" storageKey="vexor-admin-pin" title="Vexor Admin" subtitle="Enter admin PIN to access the dashboard">
+    <PinGate portal="admin" title="Vexor Admin" subtitle="Enter admin PIN to access the dashboard">
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
@@ -175,7 +170,7 @@ export default function AdminPage() {
               onClick={fetchPortfolios}
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
               </svg>
               Refresh
@@ -196,6 +191,7 @@ export default function AdminPage() {
               : "border-gray-300 bg-white hover:border-gray-400"
           }`}
         >
+          <label htmlFor="json-upload" className="sr-only">Upload collector JSON file</label>
           <input
             ref={fileInputRef}
             type="file"
@@ -204,7 +200,7 @@ export default function AdminPage() {
             className="hidden"
             id="json-upload"
           />
-          <svg className="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <svg className="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
           </svg>
           <p className="mt-3 text-sm font-medium text-gray-700">
@@ -368,7 +364,6 @@ export default function AdminPage() {
                     <h3 className="text-sm font-semibold text-gray-700 mb-4">Grade Distribution</h3>
                     <GradeChart
                       grades={getFilteredGrades(selectedPortfolio)}
-                      showPricing={true}
                     />
                   </div>
                 </div>
@@ -379,7 +374,7 @@ export default function AdminPage() {
                   </svg>
                   <h3 className="mt-4 text-base font-semibold text-gray-900">Select a portfolio</h3>
                   <p className="mt-2 text-sm text-gray-500">
-                    Choose a portfolio from the list to view grade distribution and pricing comparison.
+                    Choose a portfolio from the list to view grade distribution and verify the proof.
                   </p>
                 </div>
               )}

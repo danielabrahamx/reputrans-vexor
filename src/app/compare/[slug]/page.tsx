@@ -219,33 +219,43 @@ export async function generateMetadata({
 
 function Check() {
   return (
-    <svg
-      className="h-5 w-5 text-emerald-500"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
+    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50" role="img" aria-label="Yes">
+      <svg
+        className="h-3 w-3 text-emerald-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={3}
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M5 13l4 4L19 7"
+        />
+      </svg>
+    </span>
   );
 }
 
 function Cross() {
   return (
-    <svg
-      className="h-5 w-5 text-gray-300"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M6 18L18 6M6 6l12 12"
-      />
-    </svg>
+    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-50" role="img" aria-label="No">
+      <svg
+        className="h-3 w-3 text-gray-300"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={3}
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M6 18L18 6M6 6l12 12"
+        />
+      </svg>
+    </span>
   );
 }
 
@@ -263,16 +273,17 @@ export default async function CompareSlugPage({
   if (!data) notFound();
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white">
       {/* Hero */}
-      <section className="bg-gradient-to-b from-indigo-50 to-white py-20">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="relative overflow-hidden bg-gray-950 pb-16 pt-20">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/30 via-gray-950 to-gray-950" />
+        <div className="relative mx-auto max-w-3xl px-6">
           <Link
             href="/compare"
-            className="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800 mb-6"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 transition-colors duration-200 hover:text-white"
           >
             <svg
-              className="mr-1 h-4 w-4"
+              className="h-3.5 w-3.5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -286,46 +297,55 @@ export default async function CompareSlugPage({
             </svg>
             All comparisons
           </Link>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900">
+          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl md:text-5xl">
             {data.fullTitle}
           </h1>
-          <p className="mt-4 text-lg text-gray-600 max-w-3xl">{data.intro}</p>
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-gray-400">
+            {data.intro}
+          </p>
         </div>
       </section>
 
-      {/* Comparison table */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
-        <h2 className="text-2xl font-bold text-gray-900 mb-8">
+      {/* Feature comparison table */}
+      <section className="mx-auto max-w-3xl px-6 py-14">
+        <h2 className="text-lg font-semibold tracking-tight text-gray-900">
           Feature Comparison
         </h2>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full">
             <thead>
-              <tr className="border-b-2 border-gray-200">
-                <th className="text-left py-4 pr-4 text-sm font-semibold text-gray-500 uppercase tracking-wider">
+              <tr className="border-b border-gray-200/60">
+                <th className="pb-3 pr-4 text-left text-xs font-medium uppercase tracking-wider text-gray-400">
                   Feature
                 </th>
-                <th className="py-4 px-4 text-center text-sm font-semibold text-indigo-600 uppercase tracking-wider">
+                <th className="pb-3 px-4 text-center text-xs font-semibold uppercase tracking-wider text-indigo-600">
                   Vexor
                 </th>
-                <th className="py-4 pl-4 text-center text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                <th className="pb-3 pl-4 text-center text-xs font-medium uppercase tracking-wider text-gray-400">
                   {data.name}
                 </th>
               </tr>
             </thead>
             <tbody>
-              {featureKeys.map((key) => (
-                <tr key={key} className="border-b border-gray-100">
-                  <td className="py-4 pr-4 text-sm text-gray-700">
+              {featureKeys.map((key, i) => (
+                <tr
+                  key={key}
+                  className={
+                    i < featureKeys.length - 1
+                      ? "border-b border-gray-100"
+                      : ""
+                  }
+                >
+                  <td className="py-3 pr-4 text-sm text-gray-600">
                     {featureLabels[key]}
                   </td>
-                  <td className="py-4 px-4 text-center">
-                    <span className="inline-flex justify-center">
+                  <td className="py-3 px-4">
+                    <span className="flex justify-center">
                       {vexorFeatures[key] ? <Check /> : <Cross />}
                     </span>
                   </td>
-                  <td className="py-4 pl-4 text-center">
-                    <span className="inline-flex justify-center">
+                  <td className="py-3 pl-4">
+                    <span className="flex justify-center">
                       {data.features[key] ? <Check /> : <Cross />}
                     </span>
                   </td>
@@ -336,69 +356,73 @@ export default async function CompareSlugPage({
         </div>
       </section>
 
-      {/* Competitor overview card */}
-      <section className="max-w-7xl mx-auto px-6 pb-16">
-        <div className="rounded-xl border border-gray-200 p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+      {/* Competitor overview */}
+      <section className="mx-auto max-w-3xl px-6 pb-14">
+        <div className="rounded-xl border border-gray-200/60 bg-gray-50/50 p-6">
+          <h2 className="text-lg font-semibold tracking-tight text-gray-900">
             {data.name} Overview
           </h2>
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+              <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400">
                 Focus
               </h3>
-              <p className="mt-1 text-gray-700">{data.focus}</p>
+              <p className="mt-1 text-sm text-gray-700">{data.focus}</p>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+              <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400">
                 Pricing
               </h3>
-              <p className="mt-1 text-gray-700">{data.pricing}</p>
+              <p className="mt-1 text-sm text-gray-700">{data.pricing}</p>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+              <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400">
                 Strengths
               </h3>
-              <p className="mt-1 text-gray-700">{data.strengths}</p>
+              <p className="mt-1 text-sm text-gray-700">{data.strengths}</p>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+              <h3 className="text-xs font-medium uppercase tracking-wider text-gray-400">
                 Limitations
               </h3>
-              <p className="mt-1 text-gray-700">{data.limitations}</p>
+              <p className="mt-1 text-sm text-gray-700">{data.limitations}</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Why Choose Vexor */}
-      <section className="bg-gray-50 py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8">
+      <section className="border-t border-gray-100 bg-gray-50/50 py-14">
+        <div className="mx-auto max-w-3xl px-6">
+          <h2 className="text-lg font-semibold tracking-tight text-gray-900">
             Why Choose Vexor Over {data.name}
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
             {data.whyVexor.map((reason, i) => (
               <div
                 key={i}
-                className="flex gap-3 rounded-lg bg-white p-5 border border-gray-100"
+                className="flex gap-3 rounded-lg border border-gray-200/60 bg-white p-4 shadow-sm"
               >
                 <span className="mt-0.5 flex-shrink-0">
-                  <svg
-                    className="h-5 w-5 text-indigo-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-50">
+                    <svg
+                      className="h-3 w-3 text-indigo-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </span>
                 </span>
-                <p className="text-sm text-gray-700">{reason}</p>
+                <p className="text-[13px] leading-relaxed text-gray-600">
+                  {reason}
+                </p>
               </div>
             ))}
           </div>
@@ -406,15 +430,17 @@ export default async function CompareSlugPage({
       </section>
 
       {/* CTA */}
-      <section className="bg-indigo-600 py-16">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold text-white">Schedule a Demo</h2>
-          <p className="mt-3 text-indigo-100 max-w-xl mx-auto">
+      <section className="bg-gray-950 py-14">
+        <div className="mx-auto max-w-2xl px-6 text-center">
+          <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            Schedule a Demo
+          </h2>
+          <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-gray-400">
             See how Vexor outperforms {data.name} for your NPL portfolio.
           </p>
           <Link
             href="/#contact"
-            className="mt-6 inline-block bg-white text-indigo-600 font-semibold px-8 py-3 rounded-lg hover:bg-indigo-50 transition-colors"
+            className="mt-6 inline-block rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-indigo-500"
           >
             Book Your Demo
           </Link>

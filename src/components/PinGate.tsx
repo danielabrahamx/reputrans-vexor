@@ -4,24 +4,28 @@ import { useState, useEffect } from "react";
 
 interface PinGateProps {
   portal: "client" | "admin";
-  storageKey: string;
   title: string;
   subtitle: string;
   children: React.ReactNode;
 }
 
-export function PinGate({ portal, storageKey, title, subtitle, children }: PinGateProps) {
+export function PinGate({ portal, title, subtitle, children }: PinGateProps) {
   const [input, setInput] = useState("");
   const [authed, setAuthed] = useState(false);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
 
+  // VULN-11: Check httpOnly cookie via server call instead of sessionStorage
   useEffect(() => {
-    const stored = sessionStorage.getItem(storageKey);
-    if (stored === "authenticated") setAuthed(true);
-    setChecking(false);
-  }, [storageKey]);
+    fetch(`/api/auth?portal=${portal}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated) setAuthed(true);
+      })
+      .catch(() => {})
+      .finally(() => setChecking(false));
+  }, [portal]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +41,7 @@ export function PinGate({ portal, storageKey, title, subtitle, children }: PinGa
       const data = await res.json();
 
       if (data.authenticated) {
-        sessionStorage.setItem(storageKey, "authenticated");
+        // Cookie is set by the server response (httpOnly) - no client-side storage needed
         setAuthed(true);
       } else {
         setError(true);

@@ -27,18 +27,6 @@ export const GRADE_COLORS: Record<GradeLetter, string> = {
   E: "#ef4444",  // red-500
 };
 
-// Illustrative pricing for portfolio value comparison (cents per dollar of debt)
-export const GRADE_PRICING: Record<GradeLetter, number> = {
-  AA: 12,
-  A: 10,
-  B: 7,
-  C: 5,
-  D: 3,
-  E: 1,
-};
-
-export const BULK_PRICING = 4; // cents per dollar, industry average
-
 export function numericToGrade(value: number): GradeLetter {
   return GRADE_MAP[value] ?? "E";
 }
@@ -58,12 +46,6 @@ export function gradeDistribution(grades: GradeLetter[]): Record<GradeLetter, nu
     dist[g]++;
   }
   return dist;
-}
-
-export function portfolioValue(grades: GradeLetter[]): { graded: number; bulk: number; delta: number } {
-  const graded = grades.reduce((sum, g) => sum + GRADE_PRICING[g], 0);
-  const bulk = grades.length * BULK_PRICING;
-  return { graded, bulk, delta: graded - bulk };
 }
 
 // Filter sentinel-padded entries (score 0 padded to fill 100-element array)

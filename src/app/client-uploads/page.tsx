@@ -7,7 +7,7 @@ import { gradeDistribution, filterSentinels, type GradeLetter } from "@/lib/grad
 import { GradeChart } from "@/components/GradeChart";
 import { ProofStatus } from "@/components/ProofStatus";
 import { PinGate } from "@/components/PinGate";
-import { getClientPortfolios, saveClientPortfolio, markSentToVexor, type ClientPortfolio } from "@/lib/client-store";
+import { getClientPortfolios, saveClientPortfolio, markSentToVexor, deleteClientPortfolio, type ClientPortfolio } from "@/lib/client-store";
 
 type PageState = "idle" | "preview" | "proving" | "results" | "error";
 type Tab = "upload" | "history";
@@ -145,6 +145,18 @@ export default function ClientUploadsPage() {
     }
   }, [proofResult, preview]);
 
+  const handleDelete = useCallback((id: string) => {
+    // Find the portfolio before deleting locally so we can get the server-side ID
+    const portfolio = history.find((p) => p.id === id);
+    deleteClientPortfolio(id);
+    setHistory(getClientPortfolios());
+    if (selectedHistoryId === id) setSelectedHistoryId(null);
+    // Also delete from server if it was sent to Vexor
+    if (portfolio?.vexorId) {
+      fetch(`/api/portfolios?id=${portfolio.vexorId}`, { method: "DELETE" }).catch(() => {});
+    }
+  }, [selectedHistoryId, history]);
+
   const handleDownload = useCallback(() => {
     if (!proofResult || !filteredGrades) return;
     const payload = {
@@ -165,7 +177,7 @@ export default function ClientUploadsPage() {
   }, [proofResult, filteredGrades]);
 
   return (
-    <PinGate portal="client" storageKey="vexor-client-pin" title="Client Portal" subtitle="Enter your PIN to upload portfolios">
+    <PinGate portal="client" title="Client Portal" subtitle="Enter your PIN to upload portfolios">
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-6 py-6 flex items-center justify-between">
@@ -228,14 +240,26 @@ export default function ClientUploadsPage() {
                     <p className="text-xs text-gray-400 mt-1">
                       {new Date(p.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                     </p>
-                    <div className="mt-2 flex items-center gap-3 text-xs">
-                      <span className="text-gray-500">{p.rowCount} borrowers</span>
-                      <span className="text-gray-500">{(p.provingTimeMs / 1000).toFixed(1)}s</span>
-                      {p.sentToVexor ? (
-                        <span className="text-emerald-600 font-medium">Sent</span>
-                      ) : (
-                        <span className="text-amber-600 font-medium">Local only</span>
-                      )}
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="text-gray-500">{p.rowCount} borrowers</span>
+                        <span className="text-gray-500">{(p.provingTimeMs / 1000).toFixed(1)}s</span>
+                        {p.sentToVexor ? (
+                          <span className="text-emerald-600 font-medium">Sent</span>
+                        ) : (
+                          <span className="text-amber-600 font-medium">Local only</span>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }}
+                        className="text-gray-400 hover:text-red-500 transition-colors p-1 cursor-pointer"
+                        title="Delete portfolio"
+                        aria-label="Delete portfolio"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                        </svg>
+                      </button>
                     </div>
                   </button>
                 ))}
@@ -265,7 +289,7 @@ export default function ClientUploadsPage() {
                             </span>
                           )}
                         </div>
-                        <GradeChart grades={filtered} showPricing={false} />
+                        <GradeChart grades={filtered} />
                       </div>
                     );
                   })()
@@ -283,7 +307,7 @@ export default function ClientUploadsPage() {
       {tab === "upload" && <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
         {/* Privacy banner */}
         <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-100 rounded-xl px-5 py-4">
-          <svg className="w-5 h-5 text-indigo-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <svg className="w-5 h-5 text-indigo-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
           </svg>
           <p className="text-sm text-indigo-800 leading-relaxed">
@@ -302,8 +326,9 @@ export default function ClientUploadsPage() {
             }`}
             onClick={() => fileRef.current?.click()}
           >
-            <input ref={fileRef} type="file" accept=".csv" onChange={handleInput} className="hidden" />
-            <svg className="mx-auto w-12 h-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
+            <label htmlFor="csv-upload" className="sr-only">Upload CSV file</label>
+            <input ref={fileRef} id="csv-upload" type="file" accept=".csv" onChange={handleInput} className="hidden" />
+            <svg className="mx-auto w-12 h-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
             </svg>
             <p className="text-gray-600 font-medium">Drop your CSV file here, or click to browse</p>
@@ -385,7 +410,7 @@ export default function ClientUploadsPage() {
                   <span className="text-sm text-emerald-700 font-medium">Proof verified</span>
                 </div>
               </div>
-              <GradeChart grades={filteredGrades} showPricing={false} />
+              <GradeChart grades={filteredGrades} />
             </div>
 
             {/* Actions */}

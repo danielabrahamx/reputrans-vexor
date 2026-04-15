@@ -14,6 +14,8 @@ export interface ClientPortfolio {
 }
 
 const STORAGE_KEY = "vexor-client-portfolios";
+// VULN-15: Cap local storage to prevent unbounded growth
+const MAX_PORTFOLIOS = 50;
 
 export function getClientPortfolios(): ClientPortfolio[] {
   if (typeof window === "undefined") return [];
@@ -28,7 +30,14 @@ export function getClientPortfolios(): ClientPortfolio[] {
 export function saveClientPortfolio(portfolio: ClientPortfolio): void {
   const existing = getClientPortfolios();
   existing.unshift(portfolio);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+  const capped = existing.slice(0, MAX_PORTFOLIOS);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(capped));
+}
+
+export function deleteClientPortfolio(id: string): void {
+  const existing = getClientPortfolios();
+  const filtered = existing.filter((p) => p.id !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 }
 
 export function markSentToVexor(id: string, vexorId: string): void {
