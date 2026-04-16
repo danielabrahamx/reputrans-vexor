@@ -106,8 +106,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ id, status: portfolio.status });
   } catch (err) {
+    console.error("POST /api/portfolios error:", err);
     return NextResponse.json(
-      { error: "Failed to store portfolio" },
+      { error: "Failed to store portfolio", detail: err instanceof Error ? err.message : String(err) },
       { status: 500 }
     );
   }
